@@ -2,38 +2,39 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Yggdrasil_Lore_Crawler
 {
     class AgentPrivileges
     {
-        private IList<Uri> blockedURIs;
-        private IList<Uri> allowedURIs;
+        private IList<string> blockedURLs;
+        private IList<string> allowedURLs;
 
         public AgentPrivileges()
         {
-            blockedURIs = new List<Uri>();
-            allowedURIs = new List<Uri>();
+            blockedURLs = new List<string>();
+            allowedURLs = new List<string>();
         }
 
-        public void AddBlockedURI(Uri uri)
+        public void AddBlockedURL(string url)
         {
-            blockedURIs.Add(uri);
+            blockedURLs.Add(url.Replace("*", ".*").Replace("?", "\\?"));
         }
 
-        public void AddAllowedURI(Uri uri)
+        public void AddAllowedURL(string url)
         {
-            allowedURIs.Add(uri);
+            allowedURLs.Add(url.Replace("*", ".*").Replace("?", "\\?"));
         }
 
-        public bool IsAllowed(Uri uri)
+        public bool IsAllowed(string url)
         {
             bool allowed = true;
 
-            foreach (Uri blockedURI in blockedURIs)
+            foreach (string blockedURL in blockedURLs)
             {
-                if (uri.ToString().StartsWith(blockedURI.ToString()))
+                if (Regex.IsMatch(url, blockedURL))
                 {
                     allowed = false;
                     break;
@@ -42,9 +43,9 @@ namespace Yggdrasil_Lore_Crawler
 
             if (!allowed)
             {
-                foreach(Uri allowedURI in allowedURIs)
+                foreach(string allowedURL in allowedURLs)
                 {
-                    if (uri.ToString().StartsWith(allowedURI.ToString()))
+                    if (Regex.IsMatch(url, allowedURL))
                     {
                         allowed = true;
                         break;

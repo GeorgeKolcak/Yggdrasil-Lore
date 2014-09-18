@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Yggdrasil_Lore_Crawler
@@ -13,28 +14,53 @@ namespace Yggdrasil_Lore_Crawler
     {
         private static readonly Uri[] Seeds = new Uri[]
         {
-            new Uri("http://www.wikipedia.org"),
+            new Uri("http://en.wikipedia.org"),
             new Uri("http://www.google.com"),
             new Uri("http://www.amazon.com"),
             new Uri("http://www.bbc.com"),
             new Uri("http://www.aau.dk"),
             new Uri("http://tvtropes.org"),
             new Uri("http://www.yahoo.com"),
-            new Uri("http://www.microsoft.com")
+            new Uri("http://www.microsoft.com"),
+            new Uri("http://stackoverflow.com")
         };
 
         private Queue<Uri> frontier;
 
+        private Queue<Uri>[] backQueues;
+        private IDictionary<string, int> domainBackQueues;
+        private SortedDictionary<DateTime, string> backQueueHeap; //This is actually a binary search tree, heap to come...
+
+        private int firstEmptyBackQueueIndex = 0;
+
+        private HashSet<Uri> crawledURIs;
+
         public Crawler()
         {
-            frontier = new Queue<Uri>(Seeds);
+            frontier = new Queue<Uri>();
+            frontier.Enqueue(new Uri("http://www.fi.muni.cz"));
+            frontier.Enqueue(new Uri("http://www.univ-brest.fr"));
+            frontier.Enqueue(new Uri("http://www.laposte.fr"));
+
+            backQueues = new Queue<Uri>[256];
+            domainBackQueues = new Dictionary<string, int>();
+            backQueueHeap = new SortedDictionary<DateTime, string>();
+
+            crawledURIs = new HashSet<Uri>();
+
+            foreach (Uri seed in Seeds)
+            {
+                EnqueueURI(seed);
+                Thread.Sleep(1);
+            }
         }
 
         public IEnumerable<CrawlResult> Crawl(int numberOfResults)
         {
             for (int i = 0; i < numberOfResults; i++)
             {
-                Uri uri = frontier.Dequeue();
+                //Uri uri = frontier.Dequeue();
+                Uri uri = DequeueURI();
 
                 if (!CrawlAllowed(uri))
                 {
@@ -59,7 +85,7 @@ namespace Yggdrasil_Lore_Crawler
 
                     foreach(Uri newLink in ParseHyperlinks(content))
                     {
-                        frontier.Enqueue(newLink);
+                        EnqueueURI(newLink);
                     }
 
                     yield return new CrawlResult(uri, content);
@@ -67,38 +93,105 @@ namespace Yggdrasil_Lore_Crawler
             }
         }
 
+        private Uri DequeueURI()
+        {
+            KeyValuePair<DateTime, string> oldestAccessedDomain = backQueueHeap.First();
+            DateTime nextPossibleAccessTime = oldestAccessedDomain.Key; //The next time we may access this domain
+            string domain = oldestAccessedDomain.Value; //Get the domain accessed most in the past
+
+            backQueueHeap.Remove(nextPossibleAccessTime);
+
+            if (nextPossibleAccessTime > DateTime.UtcNow)
+            {
+                Thread.Sleep((nextPossibleAccessTime - DateTime.UtcNow).Milliseconds);
+            }
+
+            int queueIndex = domainBackQueues[domain]; //Retrieve the queue for the domain
+
+            Uri uri = backQueues[queueIndex].Dequeue(); //Get the next URI for the domain
+
+            if (backQueues[queueIndex].Count == 0)
+            {
+                domainBackQueues.Remove(domain); // Remove the old domain
+
+                Uri newUri = frontier.Dequeue();
+                domain = newUri.Host; //We overwrite the previous domain, whose queue was emptied
+
+                while (domainBackQueues.ContainsKey(domain))
+                {
+                    int oldDomainQueueIndex = domainBackQueues[domain]; //The new domain is actually not new and already has a queue
+                    backQueues[oldDomainQueueIndex].Enqueue(newUri);
+
+                    newUri = frontier.Dequeue();
+                    domain = newUri.Host;
+                }
+
+                domainBackQueues.Add(domain, queueIndex); //Add the new domain
+
+                backQueues[queueIndex].Enqueue(newUri);
+            }
+
+            backQueueHeap.Add(DateTime.UtcNow.AddSeconds(3), domain);
+
+            return uri;
+        }
+
+        private void EnqueueURI(Uri uri)
+        {
+            if (crawledURIs.Contains(uri))
+            {
+                return;
+            }
+
+            crawledURIs.Add(uri);
+
+            if (firstEmptyBackQueueIndex < 256)
+            {
+                string domain = uri.Host;
+
+                if (domainBackQueues.ContainsKey(domain))
+                {
+                    int queueIndex = domainBackQueues[domain];
+                    backQueues[queueIndex].Enqueue(uri);
+                }
+                else
+                {
+                    backQueues[firstEmptyBackQueueIndex] = new Queue<Uri>();
+                    backQueues[firstEmptyBackQueueIndex].Enqueue(uri);
+                    domainBackQueues.Add(domain, firstEmptyBackQueueIndex);
+                    backQueueHeap.Add(DateTime.UtcNow, domain);
+
+                    firstEmptyBackQueueIndex++;
+                }
+            }
+            else
+            {
+                frontier.Enqueue(uri);
+            }
+        }
+
         private IEnumerable<Uri> ParseHyperlinks(string html)
         {
-            MatchCollection hyperlinkMatches = Regex.Matches(html, "<[^<]*a[^>]*href.*>.*<[^<]*/a[^>]*>");
+            MatchCollection hyperlinkMatches = Regex.Matches(html, "<[^<>]*a[^<>]*href[^<>]*>.*<[^<>]*/a[^<>]*>");
 
             foreach (Match match in hyperlinkMatches)
             {
-                string[] hrefSplit = Regex.Split(match.Value, "href[ \t]*=[ \t]*\"");
+                string[] hrefSplit = Regex.Split(match.Value, "href[ \t]*=[ \t]*[\"\']");
 
                 if (hrefSplit.Length <= 1)
                 {
-                    hrefSplit = Regex.Split(match.Value, "href[ \t]*=[ \t]*\'");
-                }
-
-                if (hrefSplit.Length <= 1)
-                {
-                    continue; //The link is probably written in some broken fashion, so let's ignore it.
+                    continue; //This match is false positive.
                 }
 
                 string link = hrefSplit[1];
 
-                string[] hrefEnd = link.Split('\"');
-
-                if (hrefEnd.Length <= 1)
-                {
-                    hrefEnd = link.Split('\'');
-                }
+                string[] hrefEnd = Regex.Split(link, "[\"\']");
 
                 link = hrefEnd[0];
 
                 Uri uri = new Uri(link, UriKind.RelativeOrAbsolute);
                 
-                if (uri.IsAbsoluteUri)
+                if (uri.IsAbsoluteUri && !Regex.IsMatch(uri.ToString(), "^javascript"))
                 {
                     yield return uri;
                 }
@@ -111,9 +204,9 @@ namespace Yggdrasil_Lore_Crawler
 
         private bool CrawlAllowed(Uri uri)
         {
-            string host = uri.Host;
+            string host = String.Format("http://{0}", uri.Host);
 
-            WebRequest webRequest = WebRequest.Create(String.Format("http://{0}/robots.txt", host));
+            WebRequest webRequest = WebRequest.Create(String.Format("{0}/robots.txt", host));
             WebResponse response;
 
             try
@@ -153,7 +246,7 @@ namespace Yggdrasil_Lore_Crawler
 
                                 string agentName = lineSplit[1].Trim();
 
-                                if (Regex.IsMatch(agentName, "^Yggdrasil$"))
+                                if ((agentName == "*") || Regex.IsMatch(agentName, "^Yggdrasil$"))
                                 {
                                     privileges = new AgentPrivileges();
                                 }
@@ -164,16 +257,18 @@ namespace Yggdrasil_Lore_Crawler
 
                                 if (String.IsNullOrWhiteSpace(relativeURL))
                                 {
-                                    privileges.AddAllowedURI(new Uri(host));
+                                    privileges.AddAllowedURL(host + relativeURL);
                                 }
                                 else
                                 {
-                                    privileges.AddBlockedURI(new Uri(host + relativeURL));
+                                    privileges.AddBlockedURL(host + relativeURL);
                                 }
                             }
                             else if ((privileges != null) && (lineSplit[0] == "Allow"))
                             {
-                                privileges.AddAllowedURI(new Uri(host + lineSplit[1].Trim()));
+                                string relativeURL = lineSplit[1].Trim();
+
+                                privileges.AddAllowedURL(host + relativeURL);
                             }
                             else
                             {
@@ -183,7 +278,7 @@ namespace Yggdrasil_Lore_Crawler
 
                         if (privileges != null)
                         {
-                            return privileges.IsAllowed(uri);
+                            return privileges.IsAllowed(uri.ToString());
                         }
                     }
                 }

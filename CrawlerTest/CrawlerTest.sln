@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrawlerTest", "CrawlerTest\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yggdrasil Lore Crawler", "..\Yggdrasil Lore Crawler\Yggdrasil Lore Crawler\Yggdrasil Lore Crawler.csproj", "{9991479A-6F9E-4F96-B711-946EF2FF2A8B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yggdrasil Lore Indexer", "..\Yggdrasil Lore Indexer\Yggdrasil Lore Indexer.csproj", "{C8C2103B-56FC-45DC-8723-26755A5AD9BC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{9991479A-6F9E-4F96-B711-946EF2FF2A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9991479A-6F9E-4F96-B711-946EF2FF2A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9991479A-6F9E-4F96-B711-946EF2FF2A8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8C2103B-56FC-45DC-8723-26755A5AD9BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8C2103B-56FC-45DC-8723-26755A5AD9BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8C2103B-56FC-45DC-8723-26755A5AD9BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8C2103B-56FC-45DC-8723-26755A5AD9BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

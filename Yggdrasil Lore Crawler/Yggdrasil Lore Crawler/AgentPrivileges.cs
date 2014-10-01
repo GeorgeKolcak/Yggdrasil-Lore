@@ -20,12 +20,12 @@ namespace Yggdrasil_Lore_Crawler
 
         public void AddBlockedURL(string url)
         {
-            blockedURLs.Add(url.Replace("*", ".*").Replace("?", "\\?"));
+            blockedURLs.Add(url.Replace("*", ".*").Replace("?", "\\?").Replace("+", "\\+"));
         }
 
         public void AddAllowedURL(string url)
         {
-            allowedURLs.Add(url.Replace("*", ".*").Replace("?", "\\?"));
+            allowedURLs.Add(url.Replace("*", ".*").Replace("?", "\\?").Replace("+", "\\+"));
         }
 
         public bool IsAllowed(string url)

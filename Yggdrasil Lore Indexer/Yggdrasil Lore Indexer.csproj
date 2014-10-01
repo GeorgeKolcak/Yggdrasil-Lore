@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9991479A-6F9E-4F96-B711-946EF2FF2A8B}</ProjectGuid>
+    <ProjectGuid>{C8C2103B-56FC-45DC-8723-26755A5AD9BC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Yggdrasil_Lore_Crawler</RootNamespace>
-    <AssemblyName>Yggdrasil Lore Crawler</AssemblyName>
+    <RootNamespace>Yggdrasil_Lore_Indexer</RootNamespace>
+    <AssemblyName>Yggdrasil Lore Indexer</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -31,11 +31,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="HtmlAgilityPack">
-      <HintPath>..\..\CrawlerTest\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <HintPath>..\CrawlerTest\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -43,11 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AgentPrivileges.cs" />
-    <Compile Include="BinomialHeap.cs" />
-    <Compile Include="BinomialTree.cs" />
-    <Compile Include="Crawler.cs" />
-    <Compile Include="CrawlResult.cs" />
+    <Compile Include="Indexer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

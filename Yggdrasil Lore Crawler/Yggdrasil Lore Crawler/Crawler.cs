@@ -46,7 +46,7 @@ namespace Yggdrasil_Lore_Crawler
             new Uri("http://www.codeproject.com/")
         };
 
-        //private IDictionary<string, IPHostEntry> ipCache;
+        private IDictionary<string, IPHostEntry> ipCache;
 
         private Queue<Uri> frontier;
 
@@ -62,7 +62,7 @@ namespace Yggdrasil_Lore_Crawler
 
         public Crawler()
         {
-            //ipCache = new Dictionary<string, IPHostEntry>();
+            ipCache = new Dictionary<string, IPHostEntry>();
 
             frontier = new Queue<Uri>();
 
@@ -92,16 +92,16 @@ namespace Yggdrasil_Lore_Crawler
                     continue;
                 }
 
-                //if (!ipCache.ContainsKey(uri.Host))
-                //{
-                //    ipCache.Add(uri.Host, Dns.GetHostEntry(uri.DnsSafeHost));
-                //}
+                if (!ipCache.ContainsKey(uri.Host))
+                {
+                    ipCache.Add(uri.Host, Dns.GetHostEntry(uri.DnsSafeHost));
+                }
 
                 //WebResponse response = null;
 
                 //foreach (IPAddress ip in ipCache[uri.Host].AddressList)
                 //{
-                //    Uri ipUri = new Uri(Regex.Replace(uri.ToString(), uri.Host, ip.ToString()));
+                Uri ipUri = new Uri(Regex.Replace(uri.ToString(), uri.Host, ipCache[uri.Host].AddressList[0].ToString()));
 
                 //    WebRequest webRequest = WebRequest.Create(ipUri);
 
@@ -116,10 +116,6 @@ namespace Yggdrasil_Lore_Crawler
                 //    }
                 //}
 
-                //if (response == null)
-                //{
-                //    continue;
-                //}
 
                 HttpClient client = new HttpClient();
 

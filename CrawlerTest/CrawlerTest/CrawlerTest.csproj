@@ -56,6 +56,14 @@
       <Project>{9991479a-6f9e-4f96-b711-946ef2ff2a8b}</Project>
       <Name>Yggdrasil Lore Crawler</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Yggdrasil Lore Indexer\Yggdrasil Lore Indexer.csproj">
+      <Project>{c8c2103b-56fc-45dc-8723-26755a5ad9bc}</Project>
+      <Name>Yggdrasil Lore Indexer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Yggdrasil Lore Ranker\Yggdrasil Lore Ranker.csproj">
+      <Project>{c09b6612-14b0-4388-bb0a-0b36df09edc8}</Project>
+      <Name>Yggdrasil Lore Ranker</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Yggdrasil_Lore_Crawler;
 using Yggdrasil_Lore_Indexer;
+using Yggdrasil_Lore_Ranker;
 
 namespace CrawlerTest
 {
@@ -13,7 +14,7 @@ namespace CrawlerTest
     {
         static void Main(string[] args)
         {
-            InvertedIndex index = new InvertedIndex();
+            Ranker ranker = new Ranker();
 
             int numberOfPages = Int32.Parse(Console.ReadLine());
 
@@ -25,7 +26,7 @@ namespace CrawlerTest
                 Console.WriteLine("{0:00000}: {1}", i, result.URI.ToString());
                 i++;
 
-                index.NewDocument(result.URI, result.Content);
+                ranker.Index.NewDocument(result.URI, result.Content);
             }
 
             Console.WriteLine();
@@ -35,9 +36,9 @@ namespace CrawlerTest
             string query;
             while ((query = Console.ReadLine()) != null)
             {
-                foreach (IndexResult result in index.RetrieveDocuments(query))
+                foreach (Uri uri in ranker.ResolveQuery(query))
                 {
-                    Console.WriteLine(result.URI);
+                    Console.WriteLine(uri);
                 }
 
                 Console.WriteLine();

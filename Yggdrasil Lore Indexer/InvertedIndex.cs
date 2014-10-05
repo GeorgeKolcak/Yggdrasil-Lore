@@ -15,6 +15,14 @@ namespace Yggdrasil_Lore_Indexer
 
         private IDictionary<string, PostingsList> index;
 
+        public long DocumentCount
+        {
+            get
+            {
+                return nextID;
+            }
+        }
+
         public InvertedIndex()
         {
             nextID = 0L;
@@ -50,57 +58,89 @@ namespace Yggdrasil_Lore_Indexer
             index[word].AddDocument(document.ID, occurenceCount);
         }
 
-        public IEnumerable<IndexResult> RetrieveDocuments(string query)
+        public IDictionary<string, double> GetDocumentFrequency(params string[] keywords)
         {
-            string[] keywords = query.Normalise().ToArray();
+            return keywords.ToDictionary(keyword => keyword, keyword => (index.ContainsKey(keyword) ? ((double)index[keyword].Documents.Count / index.Count) : 0.0));
+        }
+
+        public IEnumerable<IndexResult> RetrieveDocuments(params string[] keywords)
+        {
+            keywords = keywords.Where(keyword => index.ContainsKey(keyword)).ToArray();
 
             if (keywords.Length == 0)
             {
-                return Enumerable.Empty<IndexResult>();
+                yield break;
             }
 
-            IEnumerable<PostingsList> keywordEntries = keywords
-                .Select(keyword => (index.ContainsKey(keyword) ? index[keyword] : null))
-                .Where(x => (x != null))
-                .OrderBy(postingList => postingList.Documents.Count);
+            PostingsList[] keywordEntries = keywords
+                .Select(keyword => index[keyword])
+                //.Select(keyword => (index.ContainsKey(keyword) ? index[keyword] : null))
+                //.Where(x => (x != null))
+                //.OrderBy(postingList => postingList.Documents.Count)
+                .ToArray();
 
-            if (keywordEntries.Count() == 0)
+            //if (keywordEntries.Length == 0)
+            //{
+            //    return Enumerable.Empty<IndexResult>();
+            //}
+
+            LinkedListNode<Tuple<long, int>>[] currentNodes = new LinkedListNode<Tuple<long, int>>[keywordEntries.Length];
+
+            for (int i = 0; i < keywordEntries.Length; i++)
             {
-                return Enumerable.Empty<IndexResult>();
+                currentNodes[i] = keywordEntries[i].Documents.First;
             }
 
-            LinkedList<Tuple<long, int>> matchingDocuments = keywordEntries.Select(postingList => postingList.Documents).Aggregate((postingList1, postingList2) =>
-               {
-                   LinkedList<Tuple<long, int>> newList = new LinkedList<Tuple<long, int>>();
+            while (currentNodes.Any(x => (x != null)))
+            {
+                long smallestID = currentNodes.Where(x => (x != null)).OrderBy(node => node.Value.Item1).First().Value.Item1;
 
-                   LinkedListNode<Tuple<long, int>> currentNode1 = postingList1.First;
-                   LinkedListNode<Tuple<long, int>> currentNode2 = postingList2.First;
+                IDictionary<string, int> keywordsPresent = new Dictionary<string, int>();
 
-                   while ((currentNode1 != null) && (currentNode2 != null))
-                   {
-                       if (currentNode1.Value.Item1 == currentNode2.Value.Item1)
-                       {
-                           newList.AddLast(currentNode1.Value);
-                           currentNode1 = currentNode1.Next;
-                           currentNode2 = currentNode2.Next;
-                       }
-                       else if (currentNode1.Value.Item1 < currentNode2.Value.Item1)
-                       {
-                           currentNode1 = currentNode1.Next;
-                       }
-                       else
-                       {
-                           currentNode2 = currentNode2.Next;
-                       }
-                   }
+                for (int i = 0; i < keywordEntries.Length; i++)
+                {
+                    if ((currentNodes[i] != null) && (currentNodes[i].Value.Item1 == smallestID))
+                    {
+                        keywordsPresent[keywords[i]] = currentNodes[i].Value.Item2;
+                        currentNodes[i] = currentNodes[i].Next;
+                    }
+                }
 
-                   return newList;
-               });
+                yield return new IndexResult(documentsByID[smallestID].URI, keywordsPresent);
+            }
+
+            //LinkedList<Tuple<long, int>> matchingDocuments = keywordEntries.Select(postingList => postingList.Documents).Aggregate((postingList1, postingList2) =>
+            //   {
+            //       LinkedList<Tuple<long, int>> newList = new LinkedList<Tuple<long, int>>();
+
+            //       LinkedListNode<Tuple<long, int>> currentNode1 = postingList1.First;
+            //       LinkedListNode<Tuple<long, int>> currentNode2 = postingList2.First;
+
+            //       while ((currentNode1 != null) && (currentNode2 != null))
+            //       {
+            //           if (currentNode1.Value.Item1 == currentNode2.Value.Item1)
+            //           {
+            //               newList.AddLast(currentNode1.Value);
+            //               currentNode1 = currentNode1.Next;
+            //               currentNode2 = currentNode2.Next;
+            //           }
+            //           else if (currentNode1.Value.Item1 < currentNode2.Value.Item1)
+            //           {
+            //               currentNode1 = currentNode1.Next;
+            //           }
+            //           else
+            //           {
+            //               currentNode2 = currentNode2.Next;
+            //           }
+            //       }
+
+            //       return newList;
+            //   });
                 
-                return matchingDocuments.Select(document => new IndexResult(documentsByID[document.Item1].URI,
-                    keywords
-                        .Where(keyword => index.ContainsKey(keyword))
-                        .ToDictionary(keyword => keyword, keyword => index[keyword].Documents.Single(doc => doc.Item1 == document.Item1).Item2)));
+            //    return matchingDocuments.Select(document => new IndexResult(documentsByID[document.Item1].URI,
+            //        keywords
+            //            .Where(keyword => index.ContainsKey(keyword))
+            //            .ToDictionary(keyword => keyword, keyword => index[keyword].Documents.Single(doc => doc.Item1 == document.Item1).Item2)));
         }
     }
 }
